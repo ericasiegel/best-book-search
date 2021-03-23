@@ -50,6 +50,36 @@ const resolvers = {
             // create the token for the user login and return token and user
             const token = signToken(user);
             return { token, user };
+        },
+        // save a book
+        saveBook: async (parent, { bookId }, context) => {
+            // if the user is signed in update the user with the saved book
+            if (context.user) {
+                const updatedUser = await User.findOneAndUpdate(
+                    { _id: context.user._id },
+                    // $addToSet pushes the book by id to the savedBooks array and prevents duplicate books from being saved
+                    { $addToSet: { savedBooks: bookId } },
+                    { new: true }
+                ).populate('savedBooks');
+                return updatedUser;
+            }
+            // if the user is not logged in throw an AuthenticationError
+            throw new AuthenticationError('You are not logged in!');
+        },
+        // delete a book
+        removeBook: async (parent, { bookId }, context) => {
+            // if the user is signed in update the user with the deleted book removed from the user's library
+            if (context.user) {
+                const updatedUser = await User.findOneAndDelete(
+                    { _id: context.user._id },
+                    // use the $pull method to remove the book by id from the savedBooks array
+                    { $pull: { savedBooks: bookId } },
+                    { new: true }
+                ).populate('savedBooks');
+                return updatedUser;
+            }
+            // if the user is not logged in throw and AuthenticationError
+            throw new AuthenticationError('You are not logged in!');
         }
     }
-}
+};
